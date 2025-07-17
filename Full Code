@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Twitch Stream Status</title>
+<style>
+  body {
+    font-family: Arial, sans-serif;
+    background: #222;
+    color: #fff;
+    padding: 20px;
+  }
+  h1 {
+    text-align: center;
+  }
+  #channels {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .channel {
+    background: #444;
+    margin: 10px;
+    padding: 10px;
+    border-radius: 8px;
+    width: 200px;
+    cursor: pointer;
+    transition: background 0.3s;
+  }
+  .channel:hover {
+    background: #555;
+  }
+  .status {
+    font-weight: bold;
+  }
+  .online {
+    color: #0f0;
+  }
+  .offline {
+    color: #888;
+  }
+  .details {
+    margin-top: 10px;
+  }
+</style>
+</head>
+<body>
+
+<h1>FreeCodeCamp Twitch Status</h1>
+<div id="channels"></div>
+
+<script>
+// List of users
+const users = ["ESL_SC2", "OgamingSC2", "cretetion", "freecodecamp", "storbeck", "habathcx", "RobotCaleb", "noobs2ninjas"];
+
+const baseUrl = 'https://twitch-proxy.freecodecamp.rocks/kraken/';
+
+const channelsContainer = document.getElementById('channels');
+
+function createChannelElement(user) {
+  const div = document.createElement('div');
+  div.className = 'channel';
+  div.dataset.username = user;
+  div.innerHTML = `
+    <h3>${user}</h3>
+    <p class="status">Loading...</p>
+    <div class="details"></div>
+  `;
+  // Add click to go to Twitch channel
+  div.addEventListener('click', () => {
+    window.open(`https://www.twitch.tv/${user}`, '_blank');
+  });
+  return div;
+}
+
+async function fetchStreamStatus(user) {
+  const response = await fetch(`${baseUrl}streams/${user}`);
+  const data = await response.json();
+  return data;
+}
+
+async function fetchChannelInfo(user) {
+  const response = await fetch(`${baseUrl}channels/${user}`);
+  const data = await response.json();
+  return data;
+}
+
+async function displayUser(user) {
+  const channelDiv = createChannelElement(user);
+  channelsContainer.appendChild(channelDiv);
+  const statusEl = channelDiv.querySelector('.status');
+  const detailsEl = channelDiv.querySelector('.details');
+
+  try {
+    const streamData = await fetchStreamStatus(user);
+    if (streamData.stream) {
+      // User is online
+      statusEl.textContent = 'Online';
+      statusEl.className = 'status online';
+      // Fetch more details about the stream
+      const channelData = await fetchChannelInfo(user);
+      detailsEl.innerHTML = `
+        <strong>Streaming:</strong> ${channelData.game}<br/>
+        <strong>Title:</strong> ${channelData.status}
+      `;
+    } else {
+      // User is offline
+      statusEl.textContent = 'Offline';
+      statusEl.className = 'status offline';
+      detailsEl.innerHTML = '';
+    }
+  } catch (error) {
+    statusEl.textContent = 'Error fetching data';
+    statusEl.className = 'status offline';
+    detailsEl.innerHTML = '';
+    console.error(error);
+  }
+}
+
+function init() {
+  users.forEach(user => {
+    displayUser(user);
+  });
+}
+
+init();
+</script>
+
+</body>
+</html>
